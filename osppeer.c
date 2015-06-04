@@ -22,6 +22,8 @@
 #include <limits.h>
 #include "md5.h"
 #include "osp2p.h"
+//////////////////
+#include <sys/wait.h>
 
 int evil_mode;			// nonzero iff this peer should behave badly
 
@@ -692,6 +694,7 @@ int main(int argc, char *argv[])
 	struct passwd *pwent;
 
 	//Fork this part to parallelize it!
+	int count = 0;
 	pid_t child;  
 	////////////////////////////////////
 
@@ -767,21 +770,53 @@ int main(int argc, char *argv[])
 	  {
 		if ((t = start_download(tracker_task, argv[1])))
 		  {
-		    child = fork();
-		    if (child == 0)
+		    if(count < 32)
 		      {
-			task_download(t, tracker_task);
-			exit(0);
-		      }
+			child = fork();
+		    
+			if (child == 0)
+			  {
+			    printf("Download forking\n");
+			    task_download(t, tracker_task);
+			    exit(0);
+			  }
 
-		    else if (child < 0)
-		      error("Forking error\n");
+			else if (child < 0)
+			  error("Download Forking error\n");
+
+			else
+			  ++count;
+		      }
 		  }
 	  }
 
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task)))
-		task_upload(t);
+	  {
+	    if(count > 0)
+	      {
+		if(waitpid(-1, NULL, WNOHANG) > 0)
+		  --count;
+	      }
 
-	return 0;
+	    if(count < 32)
+	      {
+		child = fork();
+
+		if(child == 0)
+		  {
+		    printf("Upload forking\n");
+		    task_upload(t);
+		    exit(0);
+		  }
+
+		else if(child < 0) 
+		  error("Upload forking error\n");
+
+		else
+		  ++count;
+	      }
+	  }
+
+	    return 0;
 }
