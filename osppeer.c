@@ -767,10 +767,9 @@ int main(int argc, char *argv[])
 	  {
 		if ((t = start_download(tracker_task, argv[1])))
 		  {
-		    child = folk();
+		    child = fork();
 		    if (child == 0)
 		      {
-			printk("Forked child process\n");
 			task_download(t, tracker_task);
 			exit(0);
 		      }
