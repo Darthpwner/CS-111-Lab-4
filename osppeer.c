@@ -651,6 +651,37 @@ static void task_upload(task_t *t)
 	}
 	t->head = t->tail = 0;
 
+	//if the file being opened is not in the current directory just exit with an error
+
+		DIR * dir;
+		struct dirent * ent;
+		int wrongDir = 1;
+		if ((dir = opendir(".")) == NULL) {
+			error("Current directory failed to open");
+			goto exit;
+		}
+
+		while((ent = readdir(dir)) != NULL){
+			if(strcmp(t->filename, ent->d_name) == 0){
+			{
+				wrongDir = 0;
+				break;
+			}
+
+		if(wrongDir == 1){
+			error("file is not in correct directory");
+			goto exit;
+		}
+
+		t->disk_fd = open(t->filename, O_RDONLY);
+		if (t->disk_fd == -1) {
+
+			error("* Cannot open file %s", t->filename);
+
+			goto exit;
+
+		}
+
 	t->disk_fd = open(t->filename, O_RDONLY);
 	if (t->disk_fd == -1) {
 		error("* Cannot open file %s", t->filename);
@@ -695,7 +726,7 @@ int main(int argc, char *argv[])
 
 	//Fork this part to parallelize it!
 	int count = 0;
-	pid_t child;  
+	pid_t child;
 	////////////////////////////////////
 
 	// Default tracker is read.cs.ucla.edu
@@ -773,7 +804,7 @@ int main(int argc, char *argv[])
 		    if(count < 32)
 		      {
 			child = fork();
-		    
+
 			if (child == 0)
 			  {
 			    printf("Download forking\n");
@@ -810,7 +841,7 @@ int main(int argc, char *argv[])
 		    exit(0);
 		  }
 
-		else if(child < 0) 
+		else if(child < 0)
 		  error("Upload forking error\n");
 
 		else
