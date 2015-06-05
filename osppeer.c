@@ -37,7 +37,7 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	131072	// Size of task_t::buf
+#define TASKBUFSIZ	65536	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
 
 typedef enum tasktype {		// Which type of connection is this?
@@ -478,7 +478,10 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		error("* Error while allocating task");
 		goto exit;
 	}
-	strcpy(t->filename, filename);
+
+	//Buffer overflow
+	strncpy(t->filename, filename, FILENAMESIZ);
+	///////////////////////////////////////////
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -535,7 +538,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 	// at all.
 	for (i = 0; i < 50; i++) {
 		if (i == 0)
-			strcpy(t->disk_filename, t->filename);
+		  strncpy(t->disk_filename, t->filename, FILENAMESIZ);
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
 		t->disk_fd = open(t->disk_filename,
@@ -653,7 +656,7 @@ static void task_upload(task_t *t)
 
 	//if the file being opened is not in the current directory just exit with an error
 
-		DIR * dir;
+			DIR * dir;
 		struct dirent * ent;
 		int wrongDir = 1;
 		if ((dir = opendir(".")) == NULL) {
@@ -661,18 +664,20 @@ static void task_upload(task_t *t)
 			goto exit;
 		}
 
-		while((ent = readdir(dir)) != NULL){
-			if(strcmp(t->filename, ent->d_name) == 0){
+		while((ent = readdir(dir)) != NULL)
+		  {
+			if(strcmp(t->filename, ent->d_name) == 0)
 			{
 				wrongDir = 0;
 				break;
 			}
+		  }
 
 		if(wrongDir == 1){
 			error("file is not in correct directory");
 			goto exit;
 		}
-
+	
 		t->disk_fd = open(t->filename, O_RDONLY);
 		if (t->disk_fd == -1) {
 
