@@ -39,6 +39,7 @@ static int listen_port;
 
 #define TASKBUFSIZ	4096	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
+#define MAXSIZE  4096*256
 
 typedef enum tasktype {		// Which type of connection is this?
 	TASK_TRACKER,		// => Tracker connection
@@ -584,7 +585,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 			error("* Disk write error");
 			goto try_again;
 		}
-		if(t->total_written > (FILENAMESIZ*TASKBUFSIZ){
+		if(t->total_written > MAXSIZE){
 			error("Too large file size");
 			goto try_again;
 		}
