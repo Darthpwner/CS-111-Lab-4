@@ -35,6 +35,22 @@ I had an issue "fatal-error-when-closing-sha1-file-input-output-error" when I wa
 # EXERCISE 3: Describe the attacks you implemented for "evil mode".  Why
 #    are they attacks?  (~3-10 sentences each)
 
+We implemented two methods of attacking: buffer overflow attacks and denial of
+services (DOS) attacks. 
+
+The buffer overflow attack occurs when evil_mode is set to 1. We created a new
+char array that is twice that size of FILENAMESIZE and use memset filled with 
+1's into our char array. We then write this into the buffer via osp2p_writef, 
+which will overflow the buffer since it has twice the number of characters 
+than we allocated as our buffer size.
+
+Our DOS attack occurs when evil_mode is set to 2. We start by running a while 
+loop under the condition that evil_mode remains 2. Then, we assign a value for 
+"peer_fd" by calling open_socket using our address and port of our current 
+"peer_list". We check this value to see if it's -1; if it is, it's an error and
+we repeatedly flood our peers with file requests, effectively denying the peers
+of service.
+
 # Extra credit problems
 #Extra credit problem: none
 

