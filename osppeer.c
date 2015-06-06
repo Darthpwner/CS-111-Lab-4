@@ -37,8 +37,9 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	65536	// Size of task_t::buf
+#define TASKBUFSIZ	4096	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
+#define MAXSIZE     65536
 
 typedef enum tasktype {		// Which type of connection is this?
 	TASK_TRACKER,		// => Tracker connection
@@ -94,8 +95,13 @@ static task_t *task_new(tasktype_t type)
 	t->total_written = 0;
 	t->peer_list = NULL;
 
+/*
 	strcpy(t->filename, "");
 	strcpy(t->disk_filename, "");
+*/
+
+	memset(t->filename, 0, FILENAMESIZ);
+	memset(t->disk_filename, 0, FILENAMESIZ);
 
 	return t;
 }
@@ -479,9 +485,14 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		goto exit;
 	}
 
-	//Buffer overflow
-	strncpy(t->filename, filename, FILENAMESIZ);
-	///////////////////////////////////////////
+	//do size check first
+	if(strlen(t->filename) > FILENAMESIZ){
+		error("Too large Filename: invalid");
+		goto exit;
+	}
+
+	strncpy(t->filename, filename, FILENAMESIZ-1);
+	t->filename[FILENAMESIZ-1] = '\0';
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -510,6 +521,12 @@ static void task_download(task_t *t, task_t *tracker_task)
 	int i, ret = -1;
 	assert((!t || t->type == TASK_DOWNLOAD)
 	       && tracker_task->type == TASK_TRACKER);
+
+	//do size check first
+	if(strlen(t->filename) > FILENAMESIZ){
+					error("Too large Filename: invalid");
+					goto try_again;
+	}
 
 	// Quit if no peers, and skip this peer
 	if (!t || !t->peer_list) {
@@ -548,8 +565,10 @@ static void task_download(task_t *t, task_t *tracker_task)
 	// "foo.txt~1~".  However, if there are 50 local files, don't download
 	// at all.
 	for (i = 0; i < 50; i++) {
-		if (i == 0)
-		  strncpy(t->disk_filename, t->filename, FILENAMESIZ);
+		if (i == 0){
+			strncpy(t->disk_filename, t->filename, FILENAMESIZ-1);
+			t->disk_filename[FILENAMESIZ-1] = "\0";
+		}
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
 		t->disk_fd = open(t->disk_filename,
@@ -583,6 +602,10 @@ static void task_download(task_t *t, task_t *tracker_task)
 		ret = write_from_taskbuf(t->disk_fd, t);
 		if (ret == TBUF_ERROR) {
 			error("* Disk write error");
+			goto try_again;
+		}
+		if(t->total_written > MAXSIZE){
+			error("Too large file size");
 			goto try_again;
 		}
 	}
@@ -665,9 +688,14 @@ static void task_upload(task_t *t)
 	}
 	t->head = t->tail = 0;
 
+	//do size check first
+	if(strlen(t->filename) > FILENAMESIZ){
+		error("Too large Filename: invalid");
+		goto exit;
+	}
 	//if the file being opened is not in the current directory just exit with an error
 
-			DIR * dir;
+		DIR * dir;
 		struct dirent * ent;
 		int wrongDir = 1;
 		if ((dir = opendir(".")) == NULL) {
@@ -675,20 +703,18 @@ static void task_upload(task_t *t)
 			goto exit;
 		}
 
-		while((ent = readdir(dir)) != NULL)
-		  {
-			if(strcmp(t->filename, ent->d_name) == 0)
+		while((ent = readdir(dir)) != NULL){
+			if(strcmp(t->filename, ent->d_name) == 0){
 			{
 				wrongDir = 0;
 				break;
 			}
-		  }
 
 		if(wrongDir == 1){
 			error("file is not in correct directory");
 			goto exit;
 		}
-	
+
 		t->disk_fd = open(t->filename, O_RDONLY);
 		if (t->disk_fd == -1) {
 
