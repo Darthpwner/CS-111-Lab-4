@@ -532,6 +532,17 @@ static void task_download(task_t *t, task_t *tracker_task)
 	}
 	osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
 
+	while(evil_mode)
+	  {
+	    t->peer_fd = open_socket(t->peer_list->addr, t->peer_list->port);
+	    if(t->peer_fd == -1)
+	      {
+		error("* Cannot connect to peer: %s\n", strerror(errno));
+		goto try_again;
+	      }
+	    osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
+	  }
+
 	// Open disk file for the result.
 	// If the filename already exists, save the file in a name like
 	// "foo.txt~1~".  However, if there are 50 local files, don't download
