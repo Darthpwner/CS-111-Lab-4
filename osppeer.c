@@ -567,7 +567,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 	for (i = 0; i < 50; i++) {
 		if (i == 0){
 			strncpy(t->disk_filename, t->filename, FILENAMESIZ-1);
-			t->disk_filename[FILENAMESIZ-1] = "\0";
+			t->disk_filename[FILENAMESIZ-1] = '\0';
 		}
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
@@ -679,7 +679,8 @@ static void task_upload(task_t *t)
 		} else if (ret == TBUF_END
 			   || (t->tail && t->buf[t->tail-1] == '\n'))
 			break;
-	}
+	
+		osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);}
 
 	assert(t->head == 0);
 	if (osp2p_snscanf(t->buf, t->tail, "GET %s OSP2P\n", t->filename) < 0) {
@@ -703,8 +704,8 @@ static void task_upload(task_t *t)
 			goto exit;
 		}
 
-		while((ent = readdir(dir)) != NULL){
-			if(strcmp(t->filename, ent->d_name) == 0){
+		while((ent = readdir(dir)) != NULL)
+			if(strcmp(t->filename, ent->d_name) == 0)
 			{
 				wrongDir = 0;
 				break;
