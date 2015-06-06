@@ -37,7 +37,7 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	131072	// Size of task_t::buf
+#define TASKBUFSIZ	4096	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
 
 typedef enum tasktype {		// Which type of connection is this?
@@ -584,7 +584,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 			error("* Disk write error");
 			goto try_again;
 		}
-		if(t->total_written > FILENAMESIZ*TASKBUFSIZ){
+		if(t->total_written > (FILENAMESIZ*TASKBUFSIZ){
 			error("Too large file size");
 			goto try_again;
 		}
