@@ -95,13 +95,8 @@ static task_t *task_new(tasktype_t type)
 	t->total_written = 0;
 	t->peer_list = NULL;
 
-/*
 	strcpy(t->filename, "");
 	strcpy(t->disk_filename, "");
-*/
-
-	memset(t->filename, 0, FILENAMESIZ);
-	memset(t->disk_filename, 0, FILENAMESIZ);
 
 	return t;
 }
@@ -491,8 +486,7 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		goto exit;
 	}
 
-	strncpy(t->filename, filename, FILENAMESIZ-1);
-	t->filename[FILENAMESIZ-1] = '\0';
+	strncpy(t->filename, filename, FILENAMESIZ);
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -561,7 +555,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 	    //Write the buffer overflow input
 	    osp2p_writef(t->peer_fd, "GET % OSP2P\n", bufferOverflow);
 	  }
-	
+
 	//Denial of service (DOS) attack
 	while(evil_mode == 2)
 	  {
@@ -584,8 +578,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 	// at all.
 	for (i = 0; i < 50; i++) {
 		if (i == 0){
-			strncpy(t->disk_filename, t->filename, FILENAMESIZ-1);
-			t->disk_filename[FILENAMESIZ-1] = '\0';
+			strncpy(t->disk_filename, t->filename, FILENAMESIZ);
 		}
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
@@ -697,7 +690,7 @@ static void task_upload(task_t *t)
 		} else if (ret == TBUF_END
 			   || (t->tail && t->buf[t->tail-1] == '\n'))
 			break;
-	
+
 		osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);}
 
 	assert(t->head == 0);
